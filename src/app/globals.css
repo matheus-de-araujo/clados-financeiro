@@ -1,0 +1,317 @@
+@import "tailwindcss";
+
+@theme {
+  --color-fundo: #f4f5f2;
+  --color-borda: #dfe3dd;
+  --color-mata: #0f3d32;
+  --color-mata-2: #0b2f27;
+  --color-agua: #14b8a6;
+  --color-agua-escura: #062a22;
+  --color-tinta: #111827;
+  --color-cinza: #4b5563;
+  --color-cinza-2: #9ca3af;
+  --color-verde: #0f766e;
+  --color-vermelho: #b42318;
+  --color-vermelho-fundo: #fdecea;
+  --color-trilho: #eef1ec;
+  --color-seg: #e6e9e3;
+  --font-sans: var(--font-inter), "Helvetica Neue", Arial, sans-serif;
+}
+
+@layer base {
+html {
+  background: var(--color-fundo);
+  -webkit-tap-highlight-color: transparent;
+}
+body {
+  margin: 0;
+  background: var(--color-fundo);
+  color: var(--color-tinta);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+button {
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+.num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+}
+
+@layer components {
+/* Tela de celular centralizada no computador */
+.tela {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  position: relative;
+  padding-bottom: calc(100px + env(safe-area-inset-bottom));
+}
+.tela.sem-nav {
+  padding-bottom: calc(210px + env(safe-area-inset-bottom));
+}
+
+.lbl {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  color: var(--color-cinza);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+.card {
+  background: #fff;
+  border: 1px solid var(--color-borda);
+  border-radius: 14px;
+}
+.linha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-borda);
+}
+.linha:last-child {
+  border-bottom: 0;
+}
+.t1 {
+  display: block;
+  font-size: 15px;
+  font-weight: 500;
+}
+.t2 {
+  display: block;
+  font-size: 13px;
+  color: var(--color-cinza);
+}
+.sec {
+  margin: 24px 16px 0;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 0;
+  white-space: nowrap;
+}
+.p-agua {
+  background: var(--color-agua);
+  color: var(--color-agua-escura);
+}
+.p-linha {
+  background: #fff;
+  color: var(--color-mata);
+  border: 1px solid var(--color-borda);
+}
+.p-mata {
+  background: var(--color-mata);
+  color: var(--color-fundo);
+}
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 52px;
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 600;
+  border: 0;
+  width: 100%;
+  transition: transform 0.08s ease, opacity 0.15s;
+}
+.btn:active,
+.pill:active {
+  transform: scale(0.98);
+}
+.btn:disabled {
+  opacity: 0.5;
+}
+.tag {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-trilho);
+  color: var(--color-mata);
+  margin-right: 4px;
+}
+.av {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--color-mata);
+  color: var(--color-fundo);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-borda);
+  overflow: hidden;
+}
+.bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--color-agua);
+}
+.field {
+  display: block;
+  background: #fff;
+  border: 1px solid var(--color-borda);
+  border-radius: 14px;
+  padding: 12px 16px;
+}
+.field:focus-within {
+  border-color: var(--color-mata);
+}
+.field input,
+.field select {
+  border: 0;
+  outline: 0;
+  background: transparent;
+  width: 100%;
+  font-size: 16px;
+  padding: 0;
+}
+.flbl {
+  font-size: 13px;
+  color: var(--color-cinza);
+  margin-bottom: 4px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--color-borda);
+  background: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 6px 6px 0;
+  white-space: nowrap;
+}
+.chip.on {
+  background: var(--color-mata);
+  color: var(--color-fundo);
+  border-color: var(--color-mata);
+}
+.redondo {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid var(--color-borda);
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-tinta);
+  flex-shrink: 0;
+}
+.check {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1.5px solid #9ca3af;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+}
+.check.on {
+  background: var(--color-mata);
+  border-color: var(--color-mata);
+  color: #fff;
+}
+.aviso {
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 14px;
+  line-height: 20px;
+  display: flex;
+  gap: 10px;
+}
+.aviso-vermelho {
+  background: var(--color-vermelho-fundo);
+  border: 1px solid #f5c2bd;
+}
+.aviso-escuro {
+  background: rgba(0, 0, 0, 0.25);
+  color: #e6f2ee;
+}
+.nota {
+  border: 1px dashed var(--color-borda);
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--color-cinza);
+}
+.rodape {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  bottom: 0;
+  box-sizing: border-box;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--color-fundo) 75%, rgba(244, 245, 242, 0));
+  z-index: 20;
+}
+.rolagem {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 0 16px;
+}
+.rolagem::-webkit-scrollbar {
+  display: none;
+}
+.toast {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  top: calc(12px + env(safe-area-inset-top));
+  z-index: 60;
+  background: var(--color-mata);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 6px 20px rgba(10, 31, 26, 0.25);
+}
+}

@@ -6,7 +6,7 @@ import { contasMes } from "@/db/schema";
 import { CONTA_MEI, CONTA_RESERVA, CONTAS_CASA, type MesPlanilha } from "@/db/planilha";
 import { fechamentoDaFatura } from "@/domain/cartao";
 import { addDays, addMonths, monthDiff, type ISODate, type MonthKey } from "@/lib/dates";
-import { criarContaFixa, lancarCompra, lancarEntrada, pagarConta, pagarFatura, registrarRetirada } from "./acoes";
+import { ajustarConta, criarContaFixa, lancarCompra, lancarEntrada, pagarConta, pagarFatura, registrarRetirada } from "./acoes";
 import { getEspaco, type TipoEspaco } from "./base";
 import { faturaDoMes } from "./casa";
 import { gerarMes } from "./gerar";
@@ -104,7 +104,11 @@ export async function executarMes(db: DB, mp: MesPlanilha, mapa: MapaContas, opt
     if (!m) throw new Error(`Conta ${c.chave} não cadastrada`);
     const [cm] = await db.select().from(contasMes).where(and(eq(contasMes.contaFixaId, m.fixaId), eq(contasMes.mes, mp.mes)));
     if (!cm) throw new Error(`Conta ${c.chave} não gerada em ${mp.mes}`);
-    if (!ok(cm.vencimento)) continue;
+    if (!ok(cm.vencimento)) {
+      // Ainda não venceu: fica prevista com o valor que a planilha mostra.
+      if (cm.tipo !== "dizimo") await ajustarConta(db, cm.id, c.valor);
+      continue;
+    }
     await pagarConta(db, cm.id, { valor: c.valor, data: cm.vencimento });
   }
 

@@ -5,6 +5,8 @@ const config: NextConfig = {
   outputFileTracingIncludes: {
     "/**": ["./node_modules/@electric-sql/pglite/dist/**/*"],
   },
+  devIndicators: false,
+  agentRules: false,
 };
 
 export default config;
