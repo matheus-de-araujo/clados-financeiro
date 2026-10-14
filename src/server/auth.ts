@@ -14,7 +14,12 @@ function build(db: DB) {
     }),
     // Só entra quem foi cadastrado; não há tela de criar conta.
     emailAndPassword: { enabled: true, disableSignUp: true, minPasswordLength: 8 },
-    session: { expiresIn: 60 * 60 * 24 * 90, updateAge: 60 * 60 * 24 },
+    session: {
+      expiresIn: 60 * 60 * 24 * 90,
+      updateAge: 60 * 60 * 24,
+      // Na demonstração o banco vive na memória de cada servidor; o cookie assinado mantém o login entre eles.
+      cookieCache: { enabled: isDemo, maxAge: 60 * 60 * 12 },
+    },
     trustedOrigins: (req) => {
       const origin = req?.headers.get("origin");
       return origin ? [origin] : [];
