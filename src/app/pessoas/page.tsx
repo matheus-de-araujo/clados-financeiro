@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Avatar, Cabecalho } from "@/components/ui";
 import { espacos, membros, user } from "@/db/schema";
 import { exigirSessao } from "@/server/sessao";
-import { Acesso, Sair } from "./cliente";
+import { Acesso, Sair, TrocarSenha } from "./cliente";
 
 export const metadata = { title: "Pessoas · Financeiro" };
 
@@ -44,6 +44,7 @@ export default async function Pessoas() {
         );
       })}
       <section className="mx-4 mt-6">
+        <TrocarSenha />
         <Sair />
         {s.demo ? (
           <p className="mt-4 text-center text-[13px] leading-[19px] text-cinza">

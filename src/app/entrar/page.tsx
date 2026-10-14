@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { isDemo } from "@/db";
+import { emMemoria } from "@/db";
 import { DEMO_USERS } from "@/db/seed";
 import { getSessao } from "@/server/sessao";
 import { FormEntrar } from "./form";
@@ -16,7 +16,7 @@ export default async function Entrar() {
       </div>
       <h1 className="mt-6 text-[28px] font-semibold tracking-[-0.6px]">Financeiro</h1>
       <p className="mt-1 text-[15px] text-cinza">Clados e Casa, cada um no seu lugar.</p>
-      <FormEntrar demo={isDemo ? DEMO_USERS.map((u) => ({ nome: u.name, email: u.email, senha: u.password })) : null} />
+      <FormEntrar demo={emMemoria ? DEMO_USERS.map((u) => ({ nome: u.name, email: u.email, senha: u.password })) : null} />
     </main>
   );
 }
