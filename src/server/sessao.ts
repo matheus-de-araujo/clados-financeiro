@@ -25,9 +25,11 @@ export function hoje(): ISODate {
 }
 
 export async function getSessao(): Promise<Sessao | null> {
+  // Ler os cabeçalhos primeiro deixa a página dinâmica antes de tocar no banco (nada é pré-gerado no build).
+  const h = await headers();
   const db = await getDb();
   const auth = await getAuth();
-  const s = await auth.api.getSession({ headers: await headers() });
+  const s = await auth.api.getSession({ headers: h });
   if (!s) return null;
   const ms = await db.select({ papel: membros.papel, padrao: membros.padrao, tipo: espacos.tipo }).from(membros).innerJoin(espacos, eq(espacos.id, membros.espacoId)).where(eq(membros.userId, s.user.id));
   const acesso: Record<TipoEspaco, Papel | null> = { clados: null, casa: null };
