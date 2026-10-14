@@ -28,7 +28,7 @@ export function FormEntrar({ demo }: { demo: { nome: string; email: string; senh
       {demo ? (
         <div className="card mt-8 p-4">
           <div className="text-[15px] font-semibold">Versão de demonstração</div>
-          <p className="mt-1 text-[13px] leading-[19px] text-cinza">Os dados são das planilhas de setembro a novembro e voltam ao início de tempos em tempos. Entre como:</p>
+          <p className="mt-1 text-[13px] leading-[19px] text-cinza">Os dados são das planilhas de setembro a novembro, e o dia de hoje é 14 de outubro. Entre como:</p>
           <div className="mt-3 grid grid-cols-2 gap-2">
             {demo.map((d) => (
               <button key={d.email} type="button" className="btn p-mata" style={{ height: 46, fontSize: 15 }} disabled={enviando} onClick={() => entrar(d.email, d.senha)}>

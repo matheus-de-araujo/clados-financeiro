@@ -1,7 +1,7 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
-import { getDb, isDemo, schema, type DB } from "@/db";
+import { emMemoria, getDb, isDemo, schema, type DB } from "@/db";
 
 function build(db: DB) {
   const secret = process.env.BETTER_AUTH_SECRET || (isDemo ? "modo-demonstracao-clados-financeiro-0001" : undefined);
@@ -18,7 +18,7 @@ function build(db: DB) {
       expiresIn: 60 * 60 * 24 * 90,
       updateAge: 60 * 60 * 24,
       // Na demonstração o banco vive na memória de cada servidor; o cookie assinado mantém o login entre eles.
-      cookieCache: { enabled: isDemo, maxAge: 60 * 60 * 12 },
+      cookieCache: { enabled: emMemoria, maxAge: 60 * 60 * 12 },
     },
     trustedOrigins: (req) => {
       const origin = req?.headers.get("origin");

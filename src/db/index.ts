@@ -6,7 +6,9 @@ export type DB = PgDatabase<PgQueryResultHKT, typeof schema>;
 export { schema };
 
 /** Sem DATABASE_URL o app usa um Postgres em memória (PGlite) com dados de demonstração. */
-export const isDemo = !process.env.DATABASE_URL;
+export const emMemoria = !process.env.DATABASE_URL;
+/** Dados de demonstração: no banco em memória ou no Neon com SEED_DEMO=1 (enquanto não entra em uso de verdade). */
+export const isDemo = emMemoria || process.env.SEED_DEMO === "1";
 
 /** Banco novo em memória, com as tabelas criadas e vazio. Usado nos testes e na demonstração. */
 export async function createMemoryDb(): Promise<DB> {
@@ -24,12 +26,30 @@ async function init(): Promise<DB> {
     const ws = (await import("ws")).default;
     neonConfig.webSocketConstructor = ws;
     const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-    return drizzle({ client: pool, schema }) as unknown as DB;
+    const db = drizzle({ client: pool, schema }) as unknown as DB;
+    if (isDemo) await semearUmaVez(pool, db);
+    return db;
   }
   const db = await createMemoryDb();
   const { seedDemo } = await import("./seed");
   await seedDemo(db);
   return db;
+}
+
+/** Carrega a demonstração no Neon se ainda não houver ninguém cadastrado. A trava evita duas cargas ao mesmo tempo. */
+async function semearUmaVez(pool: import("@neondatabase/serverless").Pool, db: DB) {
+  const client = await pool.connect();
+  try {
+    await client.query("select pg_advisory_lock(84278406)");
+    const { rows } = await client.query<{ n: number }>('select count(*)::int as n from "user"');
+    if (rows[0].n === 0) {
+      const { seedDemo } = await import("./seed");
+      await seedDemo(db);
+    }
+  } finally {
+    await client.query("select pg_advisory_unlock(84278406)").catch(() => {});
+    client.release();
+  }
 }
 
 const g = globalThis as unknown as { __financeiroDb?: Promise<DB> };

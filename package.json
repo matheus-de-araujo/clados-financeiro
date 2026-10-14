@@ -10,7 +10,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate && node scripts/embed-migrations.mjs",
-    "db:migrate": "node scripts/migrate-neon.mjs"
+    "db:migrate": "node scripts/migrate-neon.mjs",
+    "vercel-build": "node scripts/migrate-neon.mjs && next build"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.10",

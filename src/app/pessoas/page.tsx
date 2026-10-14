@@ -47,7 +47,7 @@ export default async function Pessoas() {
         <Sair />
         {s.demo ? (
           <p className="mt-4 text-center text-[13px] leading-[19px] text-cinza">
-            Versão de demonstração: os dados voltam ao início de tempos em tempos.{" "}
+            Versão de demonstração, com os dados das planilhas.{" "}
             <Link href="/entrar" className="text-verde">
               Trocar de pessoa
             </Link>
