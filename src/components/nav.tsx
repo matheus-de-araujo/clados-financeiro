@@ -45,13 +45,27 @@ const EXTRA: Record<Espaco, { href: string; texto: string; icone: string }> = {
 export function Navegacao({ espaco, podeEditar }: { espaco: Espaco; podeEditar: boolean }) {
   const path = usePathname();
   const [aberto, setAberto] = useState(false);
-  useEffect(() => setAberto(false), [path]);
+  // A aba tocada acende na hora, antes de a tela nova chegar.
+  const [alvo, setAlvo] = useState<string | null>(null);
+  useEffect(() => {
+    setAberto(false);
+    setAlvo(null);
+  }, [path]);
   const itens = ITENS[espaco];
+  const atual = alvo ?? path;
 
   const item = ([href, label, ic]: [string, string, string]) => {
-    const on = href === `/${espaco}` ? path === href : path.startsWith(href);
+    const on = href === `/${espaco}` ? atual === href : atual.startsWith(href);
     return (
-      <Link key={href} href={href} className="flex flex-col items-center gap-[3px] text-[11px]" style={on ? { fontWeight: 500, color: "var(--color-mata)" } : { color: "var(--color-cinza)" }} aria-current={on ? "page" : undefined}>
+      <Link
+        key={href}
+        href={href}
+        prefetch
+        onClick={() => setAlvo(href)}
+        className="aba flex flex-col items-center gap-[3px] text-[11px]"
+        style={on ? { fontWeight: 500, color: "var(--color-mata)" } : { color: "var(--color-cinza)" }}
+        aria-current={on ? "page" : undefined}
+      >
         <Icone nome={ic} />
         {label}
       </Link>

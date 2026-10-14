@@ -25,11 +25,13 @@ export interface FaturaDoMes {
 
 /** Fatura de um cartão num mês (total das compras com vencimento nesse mês). */
 export async function faturaDoMes(db: DB, cartao: Cartao, mes: MonthKey): Promise<FaturaDoMes> {
-  const [t] = await db
-    .select({ total: sql<number>`coalesce(sum(${lancamentos.valor}),0)`.mapWith(Number), qtd: sql<number>`count(*)`.mapWith(Number) })
-    .from(lancamentos)
-    .where(and(eq(lancamentos.cartaoId, cartao.id), eq(lancamentos.tipo, "compra"), eq(lancamentos.mesFatura, mes)));
-  const [f] = await db.select().from(faturas).where(and(eq(faturas.cartaoId, cartao.id), eq(faturas.mes, mes)));
+  const [[t], [f]] = await Promise.all([
+    db
+      .select({ total: sql<number>`coalesce(sum(${lancamentos.valor}),0)`.mapWith(Number), qtd: sql<number>`count(*)`.mapWith(Number) })
+      .from(lancamentos)
+      .where(and(eq(lancamentos.cartaoId, cartao.id), eq(lancamentos.tipo, "compra"), eq(lancamentos.mesFatura, mes))),
+    db.select().from(faturas).where(and(eq(faturas.cartaoId, cartao.id), eq(faturas.mes, mes))),
+  ]);
   return {
     cartao,
     mes,

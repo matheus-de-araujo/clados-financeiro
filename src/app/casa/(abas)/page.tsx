@@ -16,12 +16,16 @@ export const metadata = { title: "Casa · Financeiro" };
 export default async function InicioCasa({ searchParams }: { searchParams: Promise<{ m?: string }> }) {
   const s = await exigirSessao("casa");
   const mes = mesDaUrl(await searchParams, s.hoje);
-  const m = await mesCasa(s.db, mes, s.hoje);
-  const r = m.resumo;
-  const clados = s.acesso.clados ? await mesClados(s.db, mes, s.hoje) : null;
-  const edita = s.acesso.casa === "edita";
   const mesAnterior = addMonths(mes, -1);
-  const anteriorAberto = mesAnterior >= monthOf(m.espaco.dataInicio) && !(await getFechamento(s.db, m.espaco.id, mesAnterior)) && mes <= monthOf(s.hoje);
+  const pm = mesCasa(s.db, mes, s.hoje);
+  const [m, clados, fechAnterior] = await Promise.all([
+    pm,
+    s.acesso.clados ? mesClados(s.db, mes, s.hoje, pm) : null,
+    pm.then((x) => getFechamento(s.db, x.espaco.id, mesAnterior)),
+  ]);
+  const r = m.resumo;
+  const edita = s.acesso.casa === "edita";
+  const anteriorAberto = mesAnterior >= monthOf(m.espaco.dataInicio) && !fechAnterior && mes <= monthOf(s.hoje);
   const itens = itensContasCasa(m, s.hoje).filter((c) => !c.pago);
   const proximas = itens.slice(0, 3);
   const reservaMensal = m.contas.find((c) => c.tipo === "reserva");

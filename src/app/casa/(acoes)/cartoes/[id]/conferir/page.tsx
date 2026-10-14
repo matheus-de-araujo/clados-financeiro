@@ -11,12 +11,10 @@ export const metadata = { title: "Conferir fatura · Casa" };
 
 export default async function Conferir({ params }: { params: Promise<{ id: string }> }) {
   const s = await exigirEdicao("casa");
-  const casa = await getEspaco(s.db, "casa");
-  const cartao = await getCartao(s.db, Number((await params).id)).catch(() => null);
+  const [casa, cartao] = await Promise.all([getEspaco(s.db, "casa"), params.then((p) => getCartao(s.db, Number(p.id))).catch(() => null)]);
   if (!cartao || cartao.espacoId !== casa.id) notFound();
   const mes = mesDaFatura(s.hoje, cartao.diaFecha, cartao.diaVence);
-  const f = await faturaDoMes(s.db, cartao, mes);
-  const compras = await comprasDaFatura(s.db, cartao.id, mes);
+  const [f, compras] = await Promise.all([faturaDoMes(s.db, cartao, mes), comprasDaFatura(s.db, cartao.id, mes)]);
   const desde = f.conferidoEm;
   const recentes = compras.filter((c) => !desde || c.l.criadoEm.toISOString().slice(0, 10) >= desde || c.l.data >= desde).slice(0, 12);
   const banco = cartao.nome.split(" ")[0];

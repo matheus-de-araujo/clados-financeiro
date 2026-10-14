@@ -16,11 +16,14 @@ import { CopiarMensagem } from "./copiar";
 export default async function Cliente({ params }: { params: Promise<{ id: string }> }) {
   const s = await exigirSessao("clados");
   const id = Number((await params).id);
-  const [cli] = await s.db.select().from(clientes).where(eq(clientes.id, id));
+  const [[cli], lista, todasHoras, recebidos] = await Promise.all([
+    s.db.select().from(clientes).where(eq(clientes.id, id)),
+    listaClientes(s.db, s.hoje),
+    s.db.select().from(horas).orderBy(desc(horas.data)),
+    s.db.select().from(lancamentos).where(and(eq(lancamentos.clienteId, id), eq(lancamentos.tipo, "entrada"))).orderBy(desc(lancamentos.data)),
+  ]);
   if (!cli) notFound();
-  const info = (await listaClientes(s.db, s.hoje)).find((c) => c.cliente.id === id)!;
-  const todasHoras = await s.db.select().from(horas).orderBy(desc(horas.data));
-  const recebidos = await s.db.select().from(lancamentos).where(and(eq(lancamentos.clienteId, id), eq(lancamentos.tipo, "entrada"))).orderBy(desc(lancamentos.data));
+  const info = lista.find((c) => c.cliente.id === id)!;
   const edita = s.acesso.clados === "edita";
 
   const atrasado = info.recebiveis.find((r) => !r.recebidoEm && r.vencimento < s.hoje);

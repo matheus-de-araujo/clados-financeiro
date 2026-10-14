@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNotNull } from "drizzle-orm";
 import { ListaContas, type ItemConta } from "@/components/contas";
 import { Icone } from "@/components/icones";
 import { Cabecalho } from "@/components/ui";
@@ -18,12 +18,18 @@ export default async function ContasClados() {
   const espaco = await getEspaco(s.db, "clados");
   const mes = monthOf(s.hoje);
   await gerarAoRedor(s.db, espaco, mes);
-  const cartoes = await listCartoes(s.db, espaco.id);
-  const fixas = (await s.db.select().from(contasFixas).where(eq(contasFixas.espacoId, espaco.id))).filter((f) => fixaAtivaNoMes(f, mes));
+  const [cartoes, todas, compras, fats, doMes] = await Promise.all([
+    listCartoes(s.db, espaco.id),
+    s.db.select().from(contasFixas).where(eq(contasFixas.espacoId, espaco.id)),
+    s.db.select().from(lancamentos).where(and(eq(lancamentos.espacoId, espaco.id), isNotNull(lancamentos.contaFixaId), eq(lancamentos.mesRef, mes))),
+    s.db.select().from(faturas),
+    contasDoMes(s.db, espaco.id, mes),
+  ]);
+  const fixas = todas.filter((f) => fixaAtivaNoMes(f, mes));
   const itens: ItemConta[] = [];
   for (const f of fixas.filter((x) => x.cartaoId)) {
-    const [compra] = await s.db.select().from(lancamentos).where(and(eq(lancamentos.contaFixaId, f.id), eq(lancamentos.mesRef, mes)));
-    const [fat] = compra?.mesFatura ? await s.db.select().from(faturas).where(and(eq(faturas.cartaoId, f.cartaoId!), eq(faturas.mes, compra.mesFatura))) : [];
+    const compra = compras.find((l) => l.contaFixaId === f.id);
+    const fat = compra?.mesFatura ? fats.find((x) => x.cartaoId === f.cartaoId && x.mes === compra.mesFatura) : undefined;
     const p = parcelaNoMes(f, mes);
     const fim = f.parcelasTotal ? addMonths(f.inicioMes, f.parcelasTotal - (f.parcelaInicio ?? 1)) : null;
     itens.push({
@@ -36,7 +42,7 @@ export default async function ContasClados() {
       podeMarcar: false,
     });
   }
-  for (const c of await contasDoMes(s.db, espaco.id, mes)) {
+  for (const c of doMes) {
     itens.push({
       id: c.id,
       vencimento: c.vencimento,

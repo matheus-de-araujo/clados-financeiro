@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -24,7 +25,8 @@ export function hoje(): ISODate {
   return isDemo ? hojeDemo() : todayISO();
 }
 
-export async function getSessao(): Promise<Sessao | null> {
+/** Uma vez por requisição: o layout e a página pedem a sessão e só uma ida ao banco acontece. */
+export const getSessao = cache(async function getSessao(): Promise<Sessao | null> {
   // Ler os cabeçalhos primeiro deixa a página dinâmica antes de tocar no banco (nada é pré-gerado no build).
   const h = await headers();
   const db = await getDb();
@@ -46,7 +48,7 @@ export async function getSessao(): Promise<Sessao | null> {
     hoje: hoje(),
     demo: isDemo,
   };
-}
+});
 
 /** Para páginas: exige login e acesso ao espaço. */
 export async function exigirSessao(espaco?: TipoEspaco): Promise<Sessao> {

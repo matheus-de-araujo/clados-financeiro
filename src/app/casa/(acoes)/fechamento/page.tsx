@@ -11,10 +11,14 @@ export default async function Fechamento({ searchParams }: { searchParams: Promi
   const s = await exigirEdicao("casa");
   const sp = await searchParams;
   const mes = sp.m ? mesDaUrl(sp, s.hoje) : addMonths(monthOf(s.hoje), -1);
-  const m = await mesCasa(s.db, mes, s.hoje);
+  const pm = mesCasa(s.db, mes, s.hoje);
+  const [m, proximo, fechAnterior] = await Promise.all([
+    pm,
+    pm.then((x) => getFechamento(s.db, x.espaco.id, addMonths(mes, 1))),
+    pm.then((x) => getFechamento(s.db, x.espaco.id, addMonths(mes, -1))),
+  ]);
   const r = m.resumo;
-  const proximo = await getFechamento(s.db, m.espaco.id, addMonths(mes, 1));
-  const anteriorFechado = mes <= monthOf(m.espaco.dataInicio) || !!(await getFechamento(s.db, m.espaco.id, addMonths(mes, -1)));
+  const anteriorFechado = mes <= monthOf(m.espaco.dataInicio) || !!fechAnterior;
   const abertas = m.contas.filter((c) => !c.pagoEm).length + m.faturas.filter((f) => f.total > 0 && !f.pagoEm).length;
   return (
     <>

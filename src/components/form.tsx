@@ -23,8 +23,9 @@ export function useEnviar() {
           return null;
         }
         if (opts.aviso) avisar(opts.aviso);
-        if (opts.destino) router.push(opts.destino);
+        // Descarta as telas guardadas no aparelho antes de ir para o destino, para ele já chegar com os números novos.
         router.refresh();
+        if (opts.destino) router.push(opts.destino);
         return j;
       } catch {
         setErro("Sem conexão. Tente de novo.");

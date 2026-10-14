@@ -1,4 +1,5 @@
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import * as schema from "./schema";
 import { MIGRATIONS } from "./migrations.generated";
 
@@ -27,7 +28,7 @@ async function init(): Promise<DB> {
     neonConfig.webSocketConstructor = ws;
     const pool = new Pool({ connectionString: process.env.DATABASE_URL });
     const db = drizzle({ client: pool, schema }) as unknown as DB;
-    if (isDemo) await semearUmaVez(pool, db);
+    if (isDemo) await semearUmaVez(db);
     return db;
   }
   const db = await createMemoryDb();
@@ -36,19 +37,16 @@ async function init(): Promise<DB> {
   return db;
 }
 
-/** Carrega a demonstração no Neon se ainda não houver ninguém cadastrado. A trava evita duas cargas ao mesmo tempo. */
-async function semearUmaVez(pool: import("@neondatabase/serverless").Pool, db: DB) {
-  const client = await pool.connect();
-  try {
-    await client.query("select pg_advisory_lock(84278406)");
-    const { rows } = await client.query<{ n: number }>('select count(*)::int as n from "user"');
-    if (rows[0].n === 0) {
-      const { seedDemo } = await import("./seed");
-      await seedDemo(db);
-    }
-  } finally {
-    await client.query("select pg_advisory_unlock(84278406)").catch(() => {});
-    client.release();
+/**
+ * Carrega a demonstração no Neon se ainda não houver ninguém cadastrado. Roda uma vez por servidor,
+ * com uma consulta só; se dois servidores novos tentarem carregar juntos, o segundo falha no e-mail
+ * repetido e o próximo acesso já encontra os dados.
+ */
+async function semearUmaVez(db: DB) {
+  const [{ n }] = await db.select({ n: sql<number>`count(*)::int` }).from(schema.user);
+  if (n === 0) {
+    const { seedDemo } = await import("./seed");
+    await seedDemo(db);
   }
 }
 

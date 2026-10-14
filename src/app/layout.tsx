@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { AtualizarAoVoltar } from "@/components/atualizar";
 import { Aviso } from "@/components/form";
 import "./globals.css";
 
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         {children}
         <Aviso />
+        <AtualizarAoVoltar />
       </body>
     </html>
   );

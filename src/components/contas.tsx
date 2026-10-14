@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { longDay } from "@/lib/dates";
 import { brl, num } from "@/lib/money";
-import { CampoValor, useEnviar } from "./form";
+import { avisar, CampoValor, useEnviar } from "./form";
 import { Icone } from "./icones";
 import { DiaMes } from "./ui";
 
@@ -20,11 +21,50 @@ export interface ItemConta {
 
 export function ListaContas({ itens, hoje, edita }: { itens: ItemConta[]; hoje: string; edita: boolean }) {
   const [aberta, setAberta] = useState<ItemConta | null>(null);
-  const { enviar, enviando } = useEnviar();
+  const router = useRouter();
+  // O check muda na hora; a tela confirma quando o servidor responde. Se der erro, volta como estava.
+  const [marcadas, setMarcadas] = useState<Record<number, boolean>>({});
+  const [erro, setErro] = useState<string | null>(null);
+  // Quando a tela chega do servidor, some com o que ela já confirma (as que ainda estão indo continuam).
+  useEffect(() => {
+    setMarcadas((m) => {
+      const resto = Object.fromEntries(Object.entries(m).filter(([id, pago]) => itens.find((x) => x.id === Number(id))?.pago !== pago));
+      return Object.keys(resto).length === Object.keys(m).length ? m : resto;
+    });
+  }, [itens]);
+
+  async function alternar(c: ItemConta) {
+    const id = c.id!;
+    const pago = !(marcadas[id] ?? c.pago);
+    setErro(null);
+    setMarcadas((m) => ({ ...m, [id]: pago }));
+    try {
+      const r = await fetch(pago ? "/api/contas/pagar" : "/api/contas/desmarcar", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(pago ? { id, data: hoje } : { id }),
+      });
+      if (!r.ok) throw new Error(((await r.json().catch(() => ({}))) as { erro?: string }).erro ?? "Não deu certo. Tente de novo.");
+      avisar(pago ? `${c.nome} paga` : "Conta desmarcada");
+      router.refresh();
+    } catch (e) {
+      setMarcadas((m) => {
+        const { [id]: _, ...resto } = m;
+        return resto;
+      });
+      setErro(e instanceof TypeError ? "Sem conexão. Tente de novo." : (e as Error).message);
+    }
+  }
+
   return (
     <>
+      {erro ? (
+        <div className="aviso aviso-vermelho mb-3" role="alert">
+          {erro}
+        </div>
+      ) : null}
       <div className="card">
-        {itens.map((c, i) => (
+        {itens.map((x, i) => ({ ...x, pago: x.id != null && marcadas[x.id] !== undefined ? marcadas[x.id] : x.pago, i })).map(({ i, ...c }) => (
           <div key={c.id ?? `v${i}`} className="linha">
             <DiaMes data={c.vencimento} apagado={c.pago} />
             <button type="button" className="min-w-0 flex-1 border-0 bg-transparent p-0 text-left" disabled={!c.id || !edita || !c.podeMarcar} onClick={() => setAberta(c)}>
@@ -43,8 +83,7 @@ export function ListaContas({ itens, hoje, edita }: { itens: ItemConta[]; hoje: 
                 type="button"
                 className={`check ${c.pago ? "on" : ""}`}
                 aria-label={c.pago ? `Desmarcar ${c.nome}` : `Marcar ${c.nome} como paga`}
-                disabled={enviando}
-                onClick={() => (c.pago ? enviar("/api/contas/desmarcar", { id: c.id }, { aviso: "Conta desmarcada" }) : enviar("/api/contas/pagar", { id: c.id, data: hoje }, { aviso: `${c.nome} paga` }))}
+                onClick={() => alternar(c)}
               >
                 {c.pago ? <Icone nome="check" tam={15} traco={2.6} /> : null}
               </button>

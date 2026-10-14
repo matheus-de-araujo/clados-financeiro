@@ -21,6 +21,7 @@ npm run typecheck
 # fluxo pela interface (precisa do Playwright e do servidor rodando):
 node scripts/fluxo-ui.mjs http://localhost:3000
 node scripts/telas.mjs http://localhost:3000 Matheus   # capturas em shots/
+node scripts/velocidade.mjs http://localhost:3000 150  # tempo de cada toque com 150 ms de rede
 ```
 
 ## Produção

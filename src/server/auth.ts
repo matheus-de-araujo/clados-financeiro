@@ -17,8 +17,9 @@ function build(db: DB) {
     session: {
       expiresIn: 60 * 60 * 24 * 90,
       updateAge: 60 * 60 * 24,
-      // Na demonstração o banco vive na memória de cada servidor; o cookie assinado mantém o login entre eles.
-      cookieCache: { enabled: emMemoria, maxAge: 60 * 60 * 12 },
+      // O cookie assinado evita ir ao banco conferir a sessão a cada tela. Na demonstração em memória o banco
+      // vive em cada servidor, então o cookie vale mais tempo para manter o login entre eles.
+      cookieCache: { enabled: true, maxAge: emMemoria ? 60 * 60 * 12 : 60 * 5 },
     },
     trustedOrigins: (req) => {
       const origin = req?.headers.get("origin");

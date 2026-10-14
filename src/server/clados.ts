@@ -5,8 +5,8 @@ import { faturamentoNecessario, podeRetirar, situacaoMei, valorHoras } from "@/d
 import { addDays, addMonths, firstDay, lastDay, monthOf, type ISODate, type MonthKey } from "@/lib/dates";
 import { sum, type Cents } from "@/lib/money";
 import { getEspaco, listCartoes, saldoConta, type Espaco } from "./base";
-import { faturaDoMes, mesCasa } from "./casa";
-import { fixaAtivaNoMes, gerarAoRedor, gerarMes } from "./gerar";
+import { faturaDoMes, mesCasa, type MesCasa } from "./casa";
+import { fixaAtivaNoMes, gerarAoRedor } from "./gerar";
 
 export type Recebivel = typeof recebiveis.$inferSelect;
 export type Contrato = typeof contratos.$inferSelect;
@@ -21,18 +21,17 @@ export async function fixasClados(db: DB, espaco: Espaco, mes: MonthKey): Promis
 /** Contas da Clados não pagas e faturas do cartão Clados não pagas que vencem até hoje + 30 dias. */
 export async function comprometido(db: DB, espaco: Espaco, hoje: ISODate): Promise<{ total: Cents; contas: Cents; faturas: Cents }> {
   const limite = addDays(hoje, 30);
-  const [c] = await db
-    .select({ v: sql<number>`coalesce(sum(${contasMes.valor}),0)`.mapWith(Number) })
-    .from(contasMes)
-    .where(and(eq(contasMes.espacoId, espaco.id), isNull(contasMes.pagoEm), lte(contasMes.vencimento, limite)));
-  let fat = 0;
   const mesHoje = monthOf(hoje);
-  for (const cartao of await listCartoes(db, espaco.id)) {
-    for (const mes of [addMonths(mesHoje, -1), mesHoje, addMonths(mesHoje, 1)]) {
-      const f = await faturaDoMes(db, cartao, mes);
-      if (!f.pagoEm && f.vencimento <= limite && f.total > 0) fat += f.total;
-    }
-  }
+  const meses = [addMonths(mesHoje, -1), mesHoje, addMonths(mesHoje, 1)];
+  const [[c], fats] = await Promise.all([
+    db
+      .select({ v: sql<number>`coalesce(sum(${contasMes.valor}),0)`.mapWith(Number) })
+      .from(contasMes)
+      .where(and(eq(contasMes.espacoId, espaco.id), isNull(contasMes.pagoEm), lte(contasMes.vencimento, limite))),
+    listCartoes(db, espaco.id).then((cs) => Promise.all(cs.flatMap((cartao) => meses.map((mes) => faturaDoMes(db, cartao, mes))))),
+  ]);
+  let fat = 0;
+  for (const f of fats) if (!f.pagoEm && f.vencimento <= limite && f.total > 0) fat += f.total;
   return { total: c.v + fat, contas: c.v, faturas: fat };
 }
 
@@ -99,11 +98,13 @@ export interface MesClados {
   das: typeof contasMes.$inferSelect | null;
 }
 
-export async function mesClados(db: DB, mes: MonthKey, hoje: ISODate): Promise<MesClados> {
+/** `casa` permite reaproveitar o mês da Casa quando a tela já está calculando ele. */
+export async function mesClados(db: DB, mes: MonthKey, hoje: ISODate, casa?: Promise<MesCasa>): Promise<MesClados> {
   const espaco = await getEspaco(db, "clados");
   await gerarAoRedor(db, espaco, mes, 3);
-  const casa = await mesCasa(db, mes, hoje);
-  const [saldo, comp, retirado, fixasMes, faturado, abertos, horasAbertas] = await Promise.all([
+  // Tudo de uma vez: cada consulta vai numa conexão, então o tempo é o da mais lenta, não a soma.
+  const [mc, saldo, comp, retirado, fixasMes, faturado, abertos, horasAbertas, porMes, [das]] = await Promise.all([
+    casa ?? mesCasa(db, mes, hoje),
     saldoConta(db, espaco, hoje),
     comprometido(db, espaco, hoje),
     retiradoNoMes(db, espaco, mes),
@@ -111,27 +112,30 @@ export async function mesClados(db: DB, mes: MonthKey, hoje: ISODate): Promise<M
     faturadoNoAno(db, espaco, Number(mes.slice(0, 4))),
     recebiveisAbertos(db),
     horasNaoCobradas(db),
+    db
+      .select({
+        mes: sql<string>`to_char(${recebiveis.vencimento}, 'YYYY-MM')`,
+        v: sql<number>`coalesce(sum(${recebiveis.valor}),0)`.mapWith(Number),
+      })
+      .from(recebiveis)
+      .where(and(gte(recebiveis.vencimento, firstDay(addMonths(mes, 1))), lte(recebiveis.vencimento, lastDay(addMonths(mes, 3)))))
+      .groupBy(sql`1`),
+    db
+      .select()
+      .from(contasMes)
+      .where(and(eq(contasMes.espacoId, espaco.id), isNull(contasMes.pagoEm), sql`${contasMes.nome} ilike 'DAS%'`))
+      .orderBy(asc(contasMes.vencimento))
+      .limit(1),
   ]);
-  const metaRetirada = casa.resumo.metaRetirada;
+  const metaRetirada = mc.resumo.metaRetirada;
   const necessario = faturamentoNecessario(metaRetirada, fixasMes);
 
-  const proximos = [];
-  for (let i = 1; i <= 3; i++) {
+  const somaDe = new Map(porMes.map((r) => [r.mes, r.v]));
+  const proximos = [1, 2, 3].map((i) => {
     const m = addMonths(mes, i);
-    await gerarMes(db, espaco, m);
-    const [r] = await db
-      .select({ v: sql<number>`coalesce(sum(${recebiveis.valor}),0)`.mapWith(Number) })
-      .from(recebiveis)
-      .where(and(gte(recebiveis.vencimento, firstDay(m)), lte(recebiveis.vencimento, lastDay(m))));
-    proximos.push({ mes: m, contratado: r.v, falta: Math.max(0, necessario - r.v) });
-  }
-
-  const [das] = await db
-    .select()
-    .from(contasMes)
-    .where(and(eq(contasMes.espacoId, espaco.id), isNull(contasMes.pagoEm), sql`${contasMes.nome} ilike 'DAS%'`))
-    .orderBy(asc(contasMes.vencimento))
-    .limit(1);
+    const v = somaDe.get(m) ?? 0;
+    return { mes: m, contratado: v, falta: Math.max(0, necessario - v) };
+  });
 
   return {
     espaco,
@@ -142,7 +146,7 @@ export async function mesClados(db: DB, mes: MonthKey, hoje: ISODate): Promise<M
     podeRetirar: podeRetirar(saldo, comp.total, espaco.reservaMinima),
     retirado,
     metaRetirada,
-    faltaNaCasa: casa.resumo.faltaEntrar,
+    faltaNaCasa: mc.resumo.faltaEntrar,
     fixasMes,
     necessario,
     mei: situacaoMei(faturado),
@@ -156,10 +160,12 @@ export async function mesClados(db: DB, mes: MonthKey, hoje: ISODate): Promise<M
 /** Em aberto = suportes e cobranças vencidos, parcelas de projeto a receber e horas não cobradas. */
 export async function listaClientes(db: DB, hoje: ISODate) {
   const ano = Number(hoje.slice(0, 4));
-  const cls = await db.select().from(clientes).where(eq(clientes.ativo, true)).orderBy(asc(clientes.nome));
-  const cts = await db.select().from(contratos).where(eq(contratos.ativo, true));
-  const recs = await db.select().from(recebiveis);
-  const hs = await horasNaoCobradas(db);
+  const [cls, cts, recs, hs] = await Promise.all([
+    db.select().from(clientes).where(eq(clientes.ativo, true)).orderBy(asc(clientes.nome)),
+    db.select().from(contratos).where(eq(contratos.ativo, true)),
+    db.select().from(recebiveis),
+    horasNaoCobradas(db),
+  ]);
   return cls.map((c) => {
     const meus = recs.filter((r) => r.clienteId === c.id);
     const tipoDe = (r: Recebivel) => cts.find((k) => k.id === r.contratoId)?.tipo;

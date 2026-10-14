@@ -15,9 +15,17 @@ export class ErroDeNegocio extends Error {
   }
 }
 
+/** Os dois espaços não mudam depois de criados; ficam guardados por banco para não consultar a cada tela. */
+const espacosPorBanco = new WeakMap<object, Map<TipoEspaco, Espaco>>();
+
 export async function getEspaco(db: DB, tipo: TipoEspaco): Promise<Espaco> {
+  const guardados = espacosPorBanco.get(db) ?? new Map<TipoEspaco, Espaco>();
+  const salvo = guardados.get(tipo);
+  if (salvo) return salvo;
   const [e] = await db.select().from(espacos).where(eq(espacos.tipo, tipo));
   if (!e) throw new ErroDeNegocio(`Espaço ${tipo} não existe`, 500);
+  guardados.set(tipo, e);
+  espacosPorBanco.set(db, guardados);
   return e;
 }
 

@@ -315,3 +315,93 @@ select {
   box-shadow: 0 6px 20px rgba(10, 31, 26, 0.25);
 }
 }
+
+/* ---- Sensação de app: carregando, entrada das telas e toque ---- */
+@layer components {
+.osso {
+  display: block;
+  flex-shrink: 0;
+  background: linear-gradient(90deg, #e7eae4 0%, #f1f3ef 40%, #e7eae4 80%);
+  background-size: 300% 100%;
+  animation: brilho 1.2s ease-in-out infinite;
+}
+.osso-escuro {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.2) 40%, rgba(255, 255, 255, 0.1) 80%);
+  background-size: 300% 100%;
+}
+/* O esqueleto só aparece se a tela demorar; em trocas rápidas ele nem pisca. */
+.esqueleto {
+  animation: surgir 0.2s ease-out 0.08s both;
+}
+/* Cada tela entra com um esmaecer curto. Só opacidade: transformar quebraria os rodapés fixos. */
+.tela > :not(.rodape):not(.esqueleto) {
+  animation: surgir 0.18s ease-out both;
+}
+a.linha,
+a.card,
+button.linha {
+  transition: background-color 0.12s;
+}
+a.linha:active,
+a.card:active,
+button.linha:active {
+  background-color: #eef1ec;
+}
+.redondo:active,
+.chip:active,
+.check:active,
+.av:active {
+  transform: scale(0.94);
+}
+.redondo,
+.chip,
+.check,
+.av {
+  transition: transform 0.08s ease, background-color 0.15s, border-color 0.15s;
+}
+.check.on {
+  animation: marcar 0.22s ease-out;
+}
+.aba {
+  transition: color 0.12s, transform 0.08s;
+}
+.aba:active {
+  transform: scale(0.92);
+}
+}
+
+@keyframes brilho {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+@keyframes surgir {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes marcar {
+  0% {
+    transform: scale(0.8);
+  }
+  60% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .osso,
+  .esqueleto,
+  .tela > *,
+  .check.on {
+    animation: none !important;
+  }
+}

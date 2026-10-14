@@ -9,6 +9,7 @@ export function Alternar({ ativo, acesso }: { ativo: TipoEspaco; acesso: Record<
   const item = (tipo: TipoEspaco, label: string) => (
     <Link
       href={`/${tipo}`}
+      prefetch
       className="flex h-8 items-center rounded-full px-4 text-[14px] font-semibold"
       style={ativo === tipo ? { background: "#fff", color: "var(--color-tinta)", boxShadow: "0 1px 2px rgba(10,31,26,.12)" } : { color: "var(--color-cinza)" }}
       aria-current={ativo === tipo ? "page" : undefined}
