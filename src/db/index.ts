@@ -32,8 +32,14 @@ async function init(): Promise<DB> {
     return db;
   }
   const db = await createMemoryDb();
-  const { seedDemo } = await import("./seed");
+  const { seedDemo, hojeDemo } = await import("./seed");
   await seedDemo(db);
+  if (process.env.DEMO_PLANILHAS === "1") {
+    // Prévia local com a Casa vinda das planilhas de verdade.
+    const { importarCasa, limparCasa } = await import("@/server/importar-casa");
+    await limparCasa(db);
+    await importarCasa(db, { hoje: hojeDemo() });
+  }
   return db;
 }
 

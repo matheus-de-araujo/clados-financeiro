@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import type { DB } from "@/db";
 import { cartoes, espacos, fechamentos, lancamentos } from "@/db/schema";
 import { addMonths, type MonthKey } from "@/lib/dates";
@@ -35,8 +35,11 @@ export async function getEspacoById(db: DB, id: number): Promise<Espaco> {
   return e;
 }
 
-export async function listCartoes(db: DB, espacoId: number): Promise<Cartao[]> {
-  return db.select().from(cartoes).where(and(eq(cartoes.espacoId, espacoId), eq(cartoes.ativo, true))).orderBy(cartoes.ordem, cartoes.id);
+/** Cartões do espaço. Com `inativos`, inclui os que saíram de uso (ex.: o cartão PJ antigo da Casa), para o histórico. */
+export async function listCartoes(db: DB, espacoId: number, opts: { inativos?: boolean } = {}): Promise<Cartao[]> {
+  const conds = [eq(cartoes.espacoId, espacoId)];
+  if (!opts.inativos) conds.push(eq(cartoes.ativo, true));
+  return db.select().from(cartoes).where(and(...conds)).orderBy(desc(cartoes.ativo), cartoes.ordem, cartoes.id);
 }
 
 export async function getCartao(db: DB, id: number): Promise<Cartao> {

@@ -47,8 +47,10 @@ export async function faturaDoMes(db: DB, cartao: Cartao, mes: MonthKey): Promis
 }
 
 export async function faturasDoEspaco(db: DB, espaco: Espaco, mes: MonthKey): Promise<FaturaDoMes[]> {
-  const cs = await listCartoes(db, espaco.id);
-  return Promise.all(cs.map((c) => faturaDoMes(db, c, mes)));
+  const cs = await listCartoes(db, espaco.id, { inativos: true });
+  const fs = await Promise.all(cs.map((c) => faturaDoMes(db, c, mes)));
+  // Cartão fora de uso só aparece nos meses em que teve compras.
+  return fs.filter((f) => f.cartao.ativo || f.qtd > 0 || f.pagoEm);
 }
 
 export async function contasDoMes(db: DB, espacoId: number, mes: MonthKey): Promise<ContaMes[]> {

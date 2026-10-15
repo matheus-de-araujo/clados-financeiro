@@ -7,7 +7,7 @@ import type { MonthKey } from "@/lib/dates";
 /** Itens do extrato do mês prontos para a lista. */
 export async function itensExtrato(db: DB, espaco: Espaco, mes: MonthKey) {
   const rows = await extrato(db, espaco.id, mes);
-  const cartoes = new Map((await listCartoes(db, espaco.id)).map((c) => [c.id, c.nome]));
+  const cartoes = new Map((await listCartoes(db, espaco.id, { inativos: true })).map((c) => [c.id, c.nome]));
   const itens: (ItemExtrato & { tipo: string; cartaoId: number | null; retirada: boolean })[] = rows.map(({ l, categoria }) => {
     const parcela = l.parcela ? `parcela ${l.parcela} de ${l.parcelas}` : null;
     let sub: string;
